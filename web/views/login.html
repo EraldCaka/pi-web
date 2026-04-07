@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Pi Web — Sign In</title>
+        <link rel="stylesheet" href="/static/style.css" />
+        <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+    </head>
+    <body class="auth-body">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <svg
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                >
+                    <circle cx="12" cy="12" r="3" />
+                    <path
+                        d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"
+                    />
+                </svg>
+                <h1>Pi Web</h1>
+            </div>
+
+            <div class="tab-group" id="tabs">
+                <button class="tab active" onclick="showTab('login')">
+                    Sign In
+                </button>
+                <button class="tab" onclick="showTab('register')">
+                    Register
+                </button>
+            </div>
+
+            <div id="auth-msg"></div>
+
+            <form
+                id="login-form"
+                hx-post="/auth/login"
+                hx-target="#auth-msg"
+                hx-swap="innerHTML"
+            >
+                <div class="form-group">
+                    <label>Email</label>
+                    <input
+                        type="email"
+                        name="email"
+                        placeholder="you@example.com"
+                        required
+                        autocomplete="email"
+                    />
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input
+                        type="password"
+                        name="password"
+                        placeholder="••••••••"
+                        required
+                        autocomplete="current-password"
+                    />
+                </div>
+                <button type="submit" class="btn btn-primary">Sign In</button>
+            </form>
+
+            <form
+                id="register-form"
+                class="hidden"
+                hx-post="/auth/register"
+                hx-target="#auth-msg"
+                hx-swap="innerHTML"
+            >
+                <div class="form-group">
+                    <label>Email</label>
+                    <input
+                        type="email"
+                        name="email"
+                        placeholder="you@example.com"
+                        required
+                        autocomplete="email"
+                    />
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input
+                        type="password"
+                        name="password"
+                        placeholder="Min. 8 characters"
+                        required
+                        autocomplete="new-password"
+                    />
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    Create Account
+                </button>
+            </form>
+        </div>
+
+        <script>
+            function showTab(name) {
+                document
+                    .getElementById("login-form")
+                    .classList.toggle("hidden", name !== "login");
+                document
+                    .getElementById("register-form")
+                    .classList.toggle("hidden", name !== "register");
+                document.getElementById("auth-msg").innerHTML = "";
+                document.querySelectorAll(".tab").forEach((t, i) => {
+                    t.classList.toggle(
+                        "active",
+                        (i === 0) === (name === "login"),
+                    );
+                });
+            }
+        </script>
+    </body>
+</html>

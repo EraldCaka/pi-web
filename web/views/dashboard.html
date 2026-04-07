@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pi Web — Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+    </svg>
+    Pi Web
+  </div>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-link active">Dashboard</a>
+    {{if eq .Role "admin"}}<a href="/admin" class="nav-link">Admin</a>{{end}}
+  </div>
+  <div class="nav-user">
+    <span class="badge {{if eq .Role "admin"}}badge-admin{{else}}badge-user{{end}}">{{.Role}}</span>
+    <span style="font-size:.8rem;color:var(--muted)">{{.Email}}</span>
+    <a href="/logout" class="btn btn-ghost btn-sm">Logout</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-title">Device Dashboard</div>
+
+  <div class="grid grid-3" style="margin-bottom:1rem">
+
+    <div class="card"
+         hx-get="/fragments/health"
+         hx-trigger="load, every 10s"
+         hx-swap="innerHTML"
+         hx-target="this">
+      <div class="skeleton" style="width:60%;margin-bottom:.5rem"></div>
+      <div class="skeleton" style="width:40%"></div>
+    </div>
+
+    <div class="card col-span-2"
+         hx-get="/fragments/metrics"
+         hx-trigger="load, every 10s"
+         hx-swap="innerHTML"
+         hx-target="this">
+      <div class="skeleton" style="width:40%;margin-bottom:.75rem"></div>
+      <div class="skeleton" style="margin-bottom:.5rem"></div>
+      <div class="skeleton" style="width:80%"></div>
+    </div>
+
+  </div>
+
+  <div class="grid grid-2" style="margin-bottom:1rem">
+
+    <div class="card"
+         hx-get="/fragments/sensors"
+         hx-trigger="load, every 5s"
+         hx-swap="innerHTML"
+         hx-target="this">
+      <div class="skeleton" style="width:50%;margin-bottom:.75rem"></div>
+      <div class="skeleton"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          Live Events
+        </span>
+        <div class="ws-indicator">
+          <span class="dot" id="ws-dot" style="background:var(--yellow)"></span>
+          <span id="ws-status">connecting…</span>
+        </div>
+      </div>
+      <div class="feed" id="ws-feed">
+        <div class="empty-state">Waiting for events…</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="grid grid-2">
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          PWM Control
+        </span>
+      </div>
+      {{if .PWMPins}}
+        {{range .PWMPins}}
+        <div class="control-row" style="flex-direction:column;align-items:flex-start;gap:.6rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+            <div>
+              <div class="control-label">{{.ID}}</div>
+              <div class="control-sub">Pin {{.Pin}} · {{.Frequency}} Hz</div>
+            </div>
+            <span id="pwm-val-{{.Pin}}" class="slider-val">{{.DutyCycle}}%</span>
+          </div>
+          <div class="slider-wrap" style="width:100%">
+            <input type="range" min="0" max="100" value="{{.DutyCycle}}"
+                   name="duty_cycle"
+                   oninput="document.getElementById('pwm-val-{{.Pin}}').textContent=this.value+'%'"
+                   hx-post="/device/pwm/{{.Pin}}"
+                   hx-trigger="change"
+                   hx-swap="none">
+          </div>
+        </div>
+        {{end}}
+      {{else}}
+        <div class="empty-state">No PWM pins configured</div>
+      {{end}}
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          GPIO Control
+        </span>
+      </div>
+      {{if .DigitalPins}}
+        {{range .DigitalPins}}
+        <div class="control-row">
+          <div>
+            <div class="control-label">{{.ID}}</div>
+            <div class="control-sub">Pin {{.Pin}} · {{.Direction}}</div>
+          </div>
+          {{if eq .Direction "output"}}
+          <div style="display:flex;gap:.4rem">
+            <button class="btn btn-sm btn-green"
+                    hx-post="/device/gpio/{{.Pin}}"
+                    hx-vals='{"value":1}'
+                    hx-swap="none">ON</button>
+            <button class="btn btn-sm btn-red"
+                    hx-post="/device/gpio/{{.Pin}}"
+                    hx-vals='{"value":0}'
+                    hx-swap="none">OFF</button>
+          </div>
+          {{else}}
+          <span class="badge badge-user">input</span>
+          {{end}}
+        </div>
+        {{end}}
+      {{else}}
+        <div class="empty-state">No GPIO pins configured</div>
+      {{end}}
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function() {
+  const token = "{{.Token}}";
+  if (!token) return;
+
+  const feed = document.getElementById('ws-feed');
+  const dot  = document.getElementById('ws-dot');
+  const stat = document.getElementById('ws-status');
+  const MAX  = 50;
+
+  function setStatus(online) {
+    dot.style.background  = online ? 'var(--green)'  : 'var(--red)';
+    dot.style.boxShadow   = online ? '0 0 6px var(--green)' : 'none';
+    stat.textContent      = online ? 'connected' : 'disconnected';
+  }
+
+  function fmtTime(ms) {
+    return new Date(ms).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }
+
+  function fmtPayload(payload) {
+    try { return JSON.stringify(payload, null, 0).slice(0, 120); }
+    catch { return String(payload); }
+  }
+
+  function addItem(msg) {
+    if (feed.querySelector('.empty-state')) feed.innerHTML = '';
+    const el = document.createElement('div');
+    el.className = 'feed-item type-' + msg.type;
+    el.innerHTML =
+      '<span class="feed-time">' + fmtTime(msg.timestamp) + '</span>' +
+      '<span class="feed-type">' + msg.type + '</span>' +
+      '<span class="feed-body">' + fmtPayload(msg.payload) + '</span>';
+    feed.prepend(el);
+    while (feed.children.length > MAX) feed.removeChild(feed.lastChild);
+  }
+
+  function connect() {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(proto + '//' + location.host + '/ws?token=' + token);
+
+    ws.onopen  = () => setStatus(true);
+    ws.onclose = () => { setStatus(false); setTimeout(connect, 3000); };
+    ws.onerror = () => ws.close();
+    ws.onmessage = (e) => {
+      try { addItem(JSON.parse(e.data)); } catch {}
+    };
+  }
+
+  connect();
+})();
+</script>
+</body>
+</html>
