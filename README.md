@@ -1,5 +1,5 @@
 <div align="center">
-  # Pi Web
+    <h1><strong>Pi Web</strong></h1>
 
   **A modern web dashboard for Raspberry Pi device control, live monitoring, and user management — built in Go with Fiber, HTMX, WebSockets, JWT auth, and the PIoneer SDK.**
 
